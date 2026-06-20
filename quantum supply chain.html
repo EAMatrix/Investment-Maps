@@ -1,0 +1,976 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quantum Computing Supply Chain Map</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: #04080f;
+    --surface: #080d17;
+    --border: #151e2e;
+    --text: #dde4f0;
+    --muted: #4a5568;
+    --accent: #818cf8;
+    --accent2: #38bdf8;
+    --gold: #fbbf24;
+    --green: #34d399;
+    --red: #f87171;
+    --orange: #fb923c;
+    --purple: #c084fc;
+    --teal: #2dd4bf;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Space Grotesk', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* HEADER */
+  .header {
+    padding: 36px 24px 20px;
+    border-bottom: 1px solid var(--border);
+    background: linear-gradient(160deg, #0a0515 0%, #050a14 50%, var(--bg) 100%);
+    position: relative;
+    overflow: hidden;
+  }
+  .header::before {
+    content: '';
+    position: absolute;
+    top: -60px; right: -60px;
+    width: 300px; height: 300px;
+    background: radial-gradient(circle, rgba(129,140,248,0.07) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .header-eyebrow {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.25em;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  .header h1 {
+    font-size: clamp(24px, 5vw, 40px);
+    font-weight: 700;
+    line-height: 1.1;
+    margin-bottom: 10px;
+  }
+  .header h1 em {
+    font-style: normal;
+    background: linear-gradient(90deg, var(--accent), var(--teal));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .header-sub {
+    font-size: 13px;
+    color: var(--muted);
+    max-width: 640px;
+    line-height: 1.6;
+  }
+  .header-warning {
+    margin-top: 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    border-radius: 6px;
+    background: rgba(251,191,36,0.08);
+    border: 1px solid rgba(251,191,36,0.25);
+    font-size: 11px;
+    color: var(--gold);
+    font-family: 'Space Mono', monospace;
+  }
+
+  /* LEGEND */
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    padding: 14px 24px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: var(--muted);
+  }
+  .legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .legend-sq { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; }
+
+  /* CHAIN WRAPPER */
+  .chain {
+    padding: 24px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    max-width: 940px;
+    margin: 0 auto;
+  }
+
+  /* CONNECTOR */
+  .connector {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 32px;
+    position: relative;
+  }
+  .connector::before {
+    content: '';
+    position: absolute;
+    left: 50%; top: 0; bottom: 0;
+    width: 1px;
+    background: linear-gradient(180deg, transparent, var(--border), transparent);
+  }
+  .connector-label {
+    background: var(--bg);
+    padding: 0 10px;
+    font-family: 'Space Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.12em;
+    color: var(--muted);
+    text-transform: uppercase;
+    z-index: 1;
+  }
+
+  /* LAYER */
+  .layer {
+    border-radius: 14px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    transition: box-shadow 0.2s;
+  }
+  .layer:hover { box-shadow: 0 6px 28px rgba(0,0,0,0.5); }
+
+  .layer-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 14px 16px 10px;
+  }
+  .layer-icon {
+    font-size: 20px;
+    line-height: 1;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .layer-title { flex: 1; }
+  .layer-name { font-size: 14px; font-weight: 600; margin-bottom: 3px; }
+  .layer-desc { font-size: 11px; color: var(--muted); line-height: 1.5; }
+  .layer-badge {
+    font-family: 'Space Mono', monospace;
+    font-size: 9px;
+    padding: 3px 9px;
+    border-radius: 20px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    white-space: nowrap;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .badge-red { background: rgba(248,113,113,0.12); color: #f87171; border: 1px solid rgba(248,113,113,0.3); }
+  .badge-amber { background: rgba(251,191,36,0.12); color: #fbbf24; border: 1px solid rgba(251,191,36,0.3); }
+  .badge-purple { background: rgba(192,132,252,0.12); color: #c084fc; border: 1px solid rgba(192,132,252,0.3); }
+  .badge-teal { background: rgba(45,212,191,0.12); color: #2dd4bf; border: 1px solid rgba(45,212,191,0.3); }
+  .badge-blue { background: rgba(56,189,248,0.12); color: #38bdf8; border: 1px solid rgba(56,189,248,0.3); }
+  .badge-green { background: rgba(52,211,153,0.12); color: #34d399; border: 1px solid rgba(52,211,153,0.3); }
+
+  /* COMPANIES */
+  .companies {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 0 16px 12px;
+  }
+  .company {
+    padding: 8px 11px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: rgba(255,255,255,0.02);
+    min-width: 78px;
+    position: relative;
+    transition: transform 0.15s;
+    cursor: default;
+  }
+  .company:hover { transform: translateY(-2px); }
+  .company-ticker { font-family: 'Space Mono', monospace; font-size: 12px; font-weight: 700; line-height: 1; }
+  .company-name { font-size: 10px; color: var(--muted); margin-top: 3px; line-height: 1.2; }
+  .company-note { font-size: 9px; color: var(--muted); margin-top: 3px; opacity: 0.65; font-style: italic; }
+
+  .company.public .company-ticker { color: var(--text); }
+  .company.private .company-ticker { color: var(--muted); }
+  .company.private { opacity: 0.75; }
+  .company.private::after { content: 'PRIVATE'; position: absolute; top: -7px; right: 4px; font-family: 'Space Mono', monospace; font-size: 7px; color: var(--muted); background: var(--bg); padding: 0 3px; }
+  .company.best .company-ticker { color: var(--green); }
+  .company.best { border-color: rgba(52,211,153,0.35); background: rgba(52,211,153,0.05); }
+  .company.best::after { content: '★ TOP PICK'; position: absolute; top: -7px; right: 4px; font-family: 'Space Mono', monospace; font-size: 7px; color: var(--green); background: var(--bg); padding: 0 3px; }
+  .company.hype .company-ticker { color: var(--red); }
+  .company.hype { border-color: rgba(248,113,113,0.25); background: rgba(248,113,113,0.03); }
+  .company.hype::after { content: '⚠ HIGH RISK'; position: absolute; top: -7px; right: 4px; font-family: 'Space Mono', monospace; font-size: 7px; color: var(--red); background: var(--bg); padding: 0 3px; }
+  .company.incumbent .company-ticker { color: var(--accent); }
+  .company.incumbent { border-color: rgba(129,140,248,0.3); background: rgba(129,140,248,0.04); }
+  .company.incumbent::after { content: 'DIVERSIFIED'; position: absolute; top: -7px; right: 4px; font-family: 'Space Mono', monospace; font-size: 7px; color: var(--accent); background: var(--bg); padding: 0 3px; }
+
+  /* CALLOUT BOX */
+  .callout {
+    margin: 0 16px 14px;
+    padding: 11px 14px;
+    border-radius: 8px;
+    border-left: 3px solid;
+    font-size: 11px;
+    line-height: 1.6;
+  }
+  .callout strong {
+    display: block;
+    font-family: 'Space Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+  .callout.red { border-color: var(--red); background: rgba(248,113,113,0.05); color: #fca5a5; }
+  .callout.amber { border-color: var(--gold); background: rgba(251,191,36,0.05); color: #fde68a; }
+  .callout.purple { border-color: var(--purple); background: rgba(192,132,252,0.05); color: #e9d5ff; }
+  .callout.teal { border-color: var(--teal); background: rgba(45,212,191,0.05); color: #99f6e4; }
+  .callout.blue { border-color: var(--accent2); background: rgba(56,189,248,0.05); color: #bae6fd; }
+
+  /* LAYER BG THEMES */
+  .layer.raw { background: #060412; border-color: rgba(192,132,252,0.2); }
+  .layer.raw .layer-name { color: var(--purple); }
+  .layer.cryo { background: #04100f; border-color: rgba(45,212,191,0.2); }
+  .layer.cryo .layer-name { color: var(--teal); }
+  .layer.control { background: #04080f; border-color: rgba(56,189,248,0.2); }
+  .layer.control .layer-name { color: var(--accent2); }
+  .layer.foundry { background: #0a0610; border-color: rgba(192,132,252,0.25); }
+  .layer.foundry .layer-name { color: var(--purple); }
+  .layer.qubit { background: #050d0e; border-color: rgba(45,212,191,0.3); }
+  .layer.qubit .layer-name { color: var(--teal); }
+  .layer.ec { background: #050810; border-color: rgba(129,140,248,0.25); }
+  .layer.ec .layer-name { color: var(--accent); }
+  .layer.network { background: #060c08; border-color: rgba(52,211,153,0.2); }
+  .layer.network .layer-name { color: var(--green); }
+  .layer.cloud { background: #080510; border-color: rgba(192,132,252,0.2); }
+  .layer.cloud .layer-name { color: var(--purple); }
+  .layer.app { background: #050d07; border-color: rgba(52,211,153,0.15); }
+  .layer.app .layer-name { color: var(--green); }
+
+  /* TIMELINE SECTION */
+  .timeline-wrap {
+    max-width: 940px;
+    margin: 0 auto 24px;
+    padding: 0 16px;
+  }
+  .section-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+  .timeline {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .trow {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    padding: 12px 14px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: rgba(255,255,255,0.015);
+  }
+  .trow-year {
+    font-family: 'Space Mono', monospace;
+    font-size: 13px;
+    font-weight: 700;
+    min-width: 90px;
+    color: var(--accent);
+    flex-shrink: 0;
+  }
+  .trow-body { flex: 1; }
+  .trow-title { font-size: 13px; font-weight: 600; margin-bottom: 3px; }
+  .trow-desc { font-size: 11px; color: var(--muted); line-height: 1.5; }
+  .trow-tag {
+    font-family: 'Space Mono', monospace;
+    font-size: 9px;
+    padding: 2px 7px;
+    border-radius: 4px;
+    white-space: nowrap;
+    flex-shrink: 0;
+    align-self: flex-start;
+  }
+  .tag-now { background: rgba(52,211,153,0.12); color: var(--green); border: 1px solid rgba(52,211,153,0.3); }
+  .tag-near { background: rgba(251,191,36,0.12); color: var(--gold); border: 1px solid rgba(251,191,36,0.3); }
+  .tag-mid { background: rgba(56,189,248,0.12); color: var(--accent2); border: 1px solid rgba(56,189,248,0.3); }
+  .tag-long { background: rgba(192,132,252,0.12); color: var(--purple); border: 1px solid rgba(192,132,252,0.3); }
+
+  /* 15 STOCKS PANEL */
+  .stocks-wrap {
+    max-width: 940px;
+    margin: 0 auto 32px;
+    padding: 0 16px;
+  }
+  .stocks-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 8px;
+  }
+  .stock-card {
+    padding: 14px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: rgba(255,255,255,0.018);
+    position: relative;
+    transition: transform 0.15s, box-shadow 0.15s;
+    cursor: default;
+  }
+  .stock-card:hover { transform: translateY(-2px); box-shadow: 0 6px 24px rgba(0,0,0,0.4); }
+  .stock-card-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 7px; }
+  .stock-ticker { font-family: 'Space Mono', monospace; font-size: 16px; font-weight: 700; line-height: 1; }
+  .stock-price {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    padding: 2px 7px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    color: var(--muted);
+  }
+  .stock-name { font-size: 11px; color: var(--muted); margin-bottom: 6px; }
+  .stock-desc { font-size: 11px; line-height: 1.5; color: #8899aa; }
+  .stock-meta { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+  .stock-tag {
+    font-family: 'Space Mono', monospace;
+    font-size: 9px;
+    padding: 2px 7px;
+    border-radius: 4px;
+    border: 1px solid;
+  }
+  .tag-layer { border-color: rgba(129,140,248,0.3); color: var(--accent); background: rgba(129,140,248,0.06); }
+  .tag-risk-low { border-color: rgba(52,211,153,0.3); color: var(--green); background: rgba(52,211,153,0.06); }
+  .tag-risk-mid { border-color: rgba(251,191,36,0.3); color: var(--gold); background: rgba(251,191,36,0.06); }
+  .tag-risk-high { border-color: rgba(248,113,113,0.3); color: var(--red); background: rgba(248,113,113,0.06); }
+  .tag-horizon-now { border-color: rgba(52,211,153,0.3); color: var(--green); background: rgba(52,211,153,0.06); }
+  .tag-horizon-3y { border-color: rgba(251,191,36,0.3); color: var(--gold); background: rgba(251,191,36,0.06); }
+  .tag-horizon-10y { border-color: rgba(192,132,252,0.3); color: var(--purple); background: rgba(192,132,252,0.06); }
+
+  /* Card accent borders */
+  .stock-card.top-pick { border-color: rgba(52,211,153,0.4); background: rgba(52,211,153,0.03); }
+  .stock-card.top-pick .stock-ticker { color: var(--green); }
+  .stock-card.top-pick::before { content: '★ BEST OPTION'; position: absolute; top: -8px; left: 12px; font-family: 'Space Mono', monospace; font-size: 8px; color: var(--green); background: var(--bg); padding: 0 5px; letter-spacing: 0.05em; }
+
+  .stock-card.upside-cheap { border-color: rgba(251,191,36,0.4); background: rgba(251,191,36,0.03); }
+  .stock-card.upside-cheap .stock-ticker { color: var(--gold); }
+  .stock-card.upside-cheap::before { content: '⚡ MOST UPSIDE <$100'; position: absolute; top: -8px; left: 12px; font-family: 'Space Mono', monospace; font-size: 8px; color: var(--gold); background: var(--bg); padding: 0 5px; letter-spacing: 0.05em; }
+
+  .stock-card.caution { border-color: rgba(248,113,113,0.25); }
+  .stock-card.caution .stock-ticker { color: var(--red); }
+  .stock-card.caution::before { content: '⚠ SPECULATIVE'; position: absolute; top: -8px; left: 12px; font-family: 'Space Mono', monospace; font-size: 8px; color: var(--red); background: var(--bg); padding: 0 5px; letter-spacing: 0.05em; }
+
+  .stocks-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+  .stocks-legend {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .sleg {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 10px;
+    color: var(--muted);
+    font-family: 'Space Mono', monospace;
+  }
+  .sleg-dot { width: 6px; height: 6px; border-radius: 50%; }
+
+  /* FOOTER */
+  .footer {
+    padding: 16px 24px;
+    border-top: 1px solid var(--border);
+    font-size: 10px;
+    color: var(--muted);
+    font-family: 'Space Mono', monospace;
+    text-align: center;
+  }
+
+  @media (max-width: 600px) {
+    .stocks-grid { grid-template-columns: 1fr; }
+    .layer-header { flex-wrap: wrap; }
+    .layer-badge { margin-top: 6px; }
+    .company { min-width: 70px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-eyebrow">Investment Research · Emerging Technology</div>
+  <h1>The <em>Quantum Computing</em><br>Supply Chain Map</h1>
+  <div class="header-sub">Every layer from helium-3 to enterprise applications — where the technology actually is in June 2026, what's real vs. hype, and where the picks-and-shovels opportunity sits.</div>
+  <div class="header-warning">⚠ Speculative territory — pure-play quantum stocks carry extreme valuation risk. Treat as small, long-horizon positions only.</div>
+</div>
+
+<!-- LEGEND -->
+<div class="legend">
+  <div class="legend-item"><div class="legend-dot" style="background:#34d399"></div> ★ Top Pick</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#fbbf24"></div> ⚡ Most Upside &lt;$100</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#f87171"></div> ⚠ High Risk / Hype</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#818cf8"></div> Diversified Incumbent</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#4a5568"></div> Private Company</div>
+  <div class="legend-sq" style="background:rgba(248,113,113,0.4)"></div><span style="font-size:11px;color:var(--muted)">🔴 Active bottleneck</span>
+  <div class="legend-sq" style="background:rgba(251,191,36,0.4)"></div><span style="font-size:11px;color:var(--muted)">🟡 Emerging constraint</span>
+</div>
+
+<div class="chain">
+
+  <!-- L0: Raw Materials -->
+  <div class="layer raw">
+    <div class="layer-header">
+      <div class="layer-icon">⚗️</div>
+      <div class="layer-title">
+        <div class="layer-name">Raw Materials & Specialty Inputs</div>
+        <div class="layer-desc">Helium-3, ultra-pure silicon-28, InP/GaAs wafers, thin-film lithium niobate, quantum-grade diamond. Strategically scarce and geopolitically sensitive.</div>
+      </div>
+      <div class="layer-badge badge-amber">🟡 Constrained supply</div>
+    </div>
+    <div class="companies">
+      <div class="company public"><div class="company-ticker">USGVT</div><div class="company-name">DOE Helium-3</div><div class="company-note">Only domestic He-3 source</div></div>
+      <div class="company public"><div class="company-ticker">FCX</div><div class="company-name">Freeport-McMoRan</div><div class="company-note">Copper for dilution fridges</div></div>
+      <div class="company public"><div class="company-ticker">ENTG</div><div class="company-name">Entegris</div><div class="company-note">Ultra-pure process chemicals</div></div>
+      <div class="company public"><div class="company-ticker">MP</div><div class="company-name">MP Materials</div><div class="company-note">Rare earth elements</div></div>
+      <div class="company private"><div class="company-ticker">COHERENT</div><div class="company-name">Coherent Corp</div><div class="company-note">InP/GaAs substrates</div></div>
+    </div>
+    <div class="callout purple">
+      <strong>🟡 Strategic chokepoint</strong>
+      Helium-3 comes almost exclusively from tritium decay in U.S. and Russian nuclear programs — about 8kg produced globally per year. Each dilution refrigerator uses ~100L of He-3 per fill cycle. As quantum data centers scale, He-3 becomes a genuine bottleneck with no easy substitute.
+    </div>
+  </div>
+
+  <div class="connector"><span class="connector-label">feeds into</span></div>
+
+  <!-- L1: Cryogenics -->
+  <div class="layer cryo">
+    <div class="layer-header">
+      <div class="layer-icon">🧊</div>
+      <div class="layer-title">
+        <div class="layer-name">Cryogenics & Dilution Refrigerators</div>
+        <div class="layer-desc">Superconducting and spin qubits must operate at 15 millikelvin — colder than outer space. Dilution refrigerators are the life-support system for ~70% of all quantum computers.</div>
+      </div>
+      <div class="layer-badge badge-red">🔴 Critical bottleneck</div>
+    </div>
+    <div class="companies">
+      <div class="company private"><div class="company-ticker">BLUEFORS</div><div class="company-name">Bluefors (Finland)</div><div class="company-note">~34% market share. Global #1.</div></div>
+      <div class="company public"><div class="company-ticker">OXINF</div><div class="company-name">Oxford Instruments</div><div class="company-note">~21% share. NanoScience div.</div></div>
+      <div class="company public"><div class="company-ticker">FORM</div><div class="company-name">FormFactor</div><div class="company-note">Cryogenic probe stations (HPD)</div></div>
+      <div class="company private"><div class="company-ticker">MAYBELL</div><div class="company-name">Maybell Quantum</div><div class="company-note">Next-gen compact fridges</div></div>
+      <div class="company private"><div class="company-ticker">LEIDEN</div><div class="company-name">Leiden Cryogenics</div><div class="company-note">Custom ultra-low-temp systems</div></div>
+    </div>
+    <div class="callout red">
+      <strong>🔴 The dilution refrigerator oligopoly — the most direct "picks and shovels" play</strong>
+      Bluefors + Oxford Instruments control ~55% of the global dilution refrigerator market. Each unit costs $1–5M, takes 6–12 months to build, and every superconducting/spin qubit system needs one. Bluefors is private. FormFactor (FORM) is the most accessible public proxy — it makes the cryo probe stations used to test quantum chips and has been investing directly in the quantum ecosystem.
+    </div>
+  </div>
+
+  <div class="connector"><span class="connector-label">controlled by</span></div>
+
+  <!-- L2: Control Electronics -->
+  <div class="layer control">
+    <div class="layer-header">
+      <div class="layer-icon">🎛️</div>
+      <div class="layer-title">
+        <div class="layer-name">Control Electronics & Microwave Components</div>
+        <div class="layer-desc">The "nervous system" — arbitrary waveform generators, cryogenic amplifiers, digitizers, and FPGA-based real-time feedback that actually manipulate and read out qubits. Modality-agnostic.</div>
+      </div>
+      <div class="layer-badge badge-teal">Modality-agnostic</div>
+    </div>
+    <div class="companies">
+      <div class="company private best"><div class="company-ticker">QM</div><div class="company-name">Quantum Machines</div><div class="company-note">Used by >50% of all QC companies. $170M raised.</div></div>
+      <div class="company public"><div class="company-ticker">KEYS</div><div class="company-name">Keysight Technologies</div><div class="company-note">Quantum control + EDA tools</div></div>
+      <div class="company public"><div class="company-ticker">AMPG</div><div class="company-name">AmpliTech Group</div><div class="company-note">Cryogenic LNAs</div></div>
+      <div class="company public hype"><div class="company-ticker">SEEQC</div><div class="company-name">SEEQC</div><div class="company-note">SFQ cryo control. ~$1B SPAC Q2 2026.</div></div>
+      <div class="company private"><div class="company-ticker">ZI/R&S</div><div class="company-name">Zurich Instruments</div><div class="company-note">SHFQC controller (now R&S)</div></div>
+    </div>
+    <div class="callout teal">
+      <strong>The "Intel of quantum" moment — control electronics wins regardless of which qubit type wins</strong>
+      Quantum Machines (private) is used by more than half of all quantum computing companies globally — superconducting, trapped-ion, neutral atom, photonic. It's the CUDA of quantum hardware. Not yet public. SEEQC's SPAC is the closest way to get exposure; Keysight (KEYS) is the cleanest large-cap proxy.
+    </div>
+  </div>
+
+  <div class="connector"><span class="connector-label">fabricates chips via</span></div>
+
+  <!-- L3: Foundries -->
+  <div class="layer foundry">
+    <div class="layer-header">
+      <div class="layer-icon">🏭</div>
+      <div class="layer-title">
+        <div class="layer-name">Quantum Chip Foundries</div>
+        <div class="layer-desc">Where qubits are actually manufactured. The emerging factory layer — analogous to TSMC in AI. The May 2026 CHIPS Act $2B went heavily to foundries, validating this as the highest-conviction infrastructure bet.</div>
+      </div>
+      <div class="layer-badge badge-red">🔴 Emerging bottleneck</div>
+    </div>
+    <div class="companies">
+      <div class="company incumbent best"><div class="company-ticker">GFS</div><div class="company-name">GlobalFoundries</div><div class="company-note">Multi-modality fab. $375M CHIPS award.</div></div>
+      <div class="company incumbent"><div class="company-ticker">IBM</div><div class="company-name">IBM (Anderon fab)</div><div class="company-note">$1B CHIPS + $1B IBM match. Albany NY.</div></div>
+      <div class="company public"><div class="company-ticker">SKY</div><div class="company-name">SkyWater Technology</div><div class="company-note">IonQ acquisition target ($1.8B). Only US pure-play foundry.</div></div>
+      <div class="company public"><div class="company-ticker">INTC</div><div class="company-name">Intel</div><div class="company-note">Silicon-spin qubit foundry research</div></div>
+    </div>
+    <div class="callout purple">
+      <strong>🔴 The TSMC analogy — foundries win before the computers do</strong>
+      TSMC made money before NVDA was worth anything. Quantum foundries are at that same inflection point. GlobalFoundries supports ALL five major qubit modalities — it wins regardless of which architecture becomes dominant. IonQ's $1.8B SkyWater acquisition signals that foundry capacity is already becoming the limiting factor.
+    </div>
+  </div>
+
+  <div class="connector"><span class="connector-label">produces</span></div>
+
+  <!-- L4: Qubit Platforms -->
+  <div class="layer qubit">
+    <div class="layer-header">
+      <div class="layer-icon">⚛️</div>
+      <div class="layer-title">
+        <div class="layer-name">Qubit Platforms (The 5 Architectures Racing to Win)</div>
+        <div class="layer-desc">Five fundamentally different approaches to building a qubit — each with different strengths. Nobody knows which will win. This is why foundry-layer and control-layer plays are smarter than betting on one architecture.</div>
+      </div>
+      <div class="layer-badge badge-purple">Architecture race</div>
+    </div>
+    <div class="companies">
+      <div class="company incumbent"><div class="company-ticker">IBM</div><div class="company-name">Superconducting</div><div class="company-note">1,121 qubits (Condor). Most mature.</div></div>
+      <div class="company incumbent"><div class="company-ticker">GOOGL</div><div class="company-name">Superconducting</div><div class="company-note">105-qubit Willow. First verifiable advantage Oct '25.</div></div>
+      <div class="company public best"><div class="company-ticker">IONQ</div><div class="company-name">Trapped-Ion</div><div class="company-note">99.99% 2-qubit fidelity. $130M 2025 revenue.</div></div>
+      <div class="company public"><div class="company-ticker">QNT</div><div class="company-name">Quantinuum</div><div class="company-note">Trapped-ion. 48 logical qubits. IPO'd Jun '26.</div></div>
+      <div class="company public"><div class="company-ticker">RGTI</div><div class="company-name">Rigetti (SC)</div><div class="company-note">108 qubits. $7M revenue vs $8B mkt cap.</div></div>
+      <div class="company public"><div class="company-ticker">QBTS</div><div class="company-name">D-Wave</div><div class="company-note">Annealing (5,000+ qubits). 100+ customers.</div></div>
+      <div class="company private"><div class="company-ticker">QUERA</div><div class="company-name">Neutral Atom</div><div class="company-note">96 logical qubits (Nature, Jan '26)</div></div>
+      <div class="company incumbent"><div class="company-ticker">MSFT</div><div class="company-name">Topological</div><div class="company-note">Majorana 1. Contested claims. Highest risk/reward.</div></div>
+    </div>
+    <div class="callout amber">
+      <strong>🟡 The architecture bet — nobody knows who wins</strong>
+      Google proved below-threshold error correction. IonQ has the best fidelity. QuEra demonstrated 96 logical qubits. Microsoft's topological approach could leapfrog all of them — or fail entirely (experts are split). IBM has the clearest commercial roadmap. Betting on one architecture is like betting on one OS in 1980. The safer bet is the enabling layer.
+    </div>
+  </div>
+
+  <div class="connector"><span class="connector-label">requires</span></div>
+
+  <!-- L5: Lasers & Photonics -->
+  <div class="layer ec">
+    <div class="layer-header">
+      <div class="layer-icon">🔬</div>
+      <div class="layer-title">
+        <div class="layer-name">Lasers, Photonics & Optics</div>
+        <div class="layer-desc">Trapped-ion and neutral-atom systems each require 5–10 distinct laser systems for cooling, trapping, and gate operations. An often-overlooked supply chain chokepoint as these architectures scale.</div>
+      </div>
+      <div class="layer-badge badge-blue">Ion/Atom chokepoint</div>
+    </div>
+    <div class="companies">
+      <div class="company private"><div class="company-ticker">TOPTICA</div><div class="company-name">TOPTICA (Germany)</div><div class="company-note">Dominant tunable diode laser supplier for ion/atom QC</div></div>
+      <div class="company private"><div class="company-ticker">M2</div><div class="company-name">M Squared (UK)</div><div class="company-note">Ti:Sapphire/OPO systems</div></div>
+      <div class="company public"><div class="company-ticker">IIVI</div><div class="company-name">Coherent Corp</div><div class="company-note">High-power laser components</div></div>
+      <div class="company public"><div class="company-ticker">LASR</div><div class="company-name">nLIGHT</div><div class="company-note">Fiber lasers. Defense-primary.</div></div>
+      <div class="company public"><div class="company-ticker">LITE</div><div class="company-name">Lumentum</div><div class="company-note">Photonic components</div></div>
+    </div>
+    <div class="callout blue">
+      <strong>The laser supply squeeze nobody is talking about</strong>
+      A single trapped-ion quantum computer requires 5–10 precisely tuned laser systems across UV to near-IR wavelengths. TOPTICA (private) dominates this market. As IonQ, Quantinuum, and others scale from dozens to thousands of ion traps, laser supply becomes a genuine manufacturing bottleneck — and TOPTICA will likely IPO before 2028.
+    </div>
+  </div>
+
+  <div class="connector"><span class="connector-label">corrected by</span></div>
+
+  <!-- L6: Error Correction -->
+  <div class="layer network">
+    <div class="layer-header">
+      <div class="layer-icon">🛡️</div>
+      <div class="layer-title">
+        <div class="layer-name">Error Correction & Classical Co-Processing</div>
+        <div class="layer-desc">Real-time decoding of quantum errors requires classical processors running at microsecond timescales. This is where NVIDIA's NVQLink positions it as the indispensable bridge between quantum and classical compute.</div>
+      </div>
+      <div class="layer-badge badge-green">NVDA's quantum role</div>
+    </div>
+    <div class="companies">
+      <div class="company incumbent best"><div class="company-ticker">NVDA</div><div class="company-name">NVIDIA NVQLink</div><div class="company-note">CUDA-Q framework. Invested in QuEra, Quantinuum, PsiQuantum.</div></div>
+      <div class="company private"><div class="company-ticker">RIVERLANE</div><div class="company-name">Riverlane</div><div class="company-note">Quantum error decoding software</div></div>
+      <div class="company private"><div class="company-ticker">QCTRL</div><div class="company-name">Q-CTRL</div><div class="company-note">Error mitigation firmware</div></div>
+      <div class="company public"><div class="company-ticker">IBM</div><div class="company-name">IBM Quantum</div><div class="company-note">Kookaburra qLDPC error correction '26</div></div>
+    </div>
+    <div class="callout teal">
+      <strong>NVDA owns the AI-quantum bridge — same play as AI infrastructure</strong>
+      Just as CUDA became the software standard that locked developers into NVIDIA GPUs, CUDA-Q is positioning NVDA as the runtime that connects quantum processors to classical AI workloads. NVDA has taken stakes in all three leading qubit modalities (superconducting via Google, trapped-ion via IonQ, neutral-atom via QuEra). It wins regardless of which architecture scales.
+    </div>
+  </div>
+
+  <div class="connector"><span class="connector-label">networked via</span></div>
+
+  <!-- L7: Quantum Networking -->
+  <div class="layer cloud">
+    <div class="layer-header">
+      <div class="layer-icon">🌐</div>
+      <div class="layer-title">
+        <div class="layer-name">Quantum Networking & Communications</div>
+        <div class="layer-desc">Distributing entanglement between quantum processors and enabling quantum-safe cryptography. The post-quantum cryptography (PQC) opportunity is happening NOW — regardless of when QC matures.</div>
+      </div>
+      <div class="layer-badge badge-purple">PQC opportunity now</div>
+    </div>
+    <div class="companies">
+      <div class="company public"><div class="company-ticker">IONQ</div><div class="company-name">IonQ Networking</div><div class="company-note">Acquired Qubitekk + ID Quantique + Skyloom</div></div>
+      <div class="company public hype"><div class="company-ticker">ARQQ</div><div class="company-name">Arqit Quantum</div><div class="company-note">Quantum-safe encryption. Revenue thin.</div></div>
+      <div class="company private"><div class="company-ticker">ALIRO</div><div class="company-name">Aliro Quantum</div><div class="company-note">Cisco partnership. Entanglement-as-a-service.</div></div>
+      <div class="company public"><div class="company-ticker">CSCO</div><div class="company-name">Cisco</div><div class="company-note">Quantum networking partnerships (Aliro)</div></div>
+    </div>
+    <div class="callout purple">
+      <strong>PQC is a NOW trade — not a 10-year bet</strong>
+      NIST finalized post-quantum cryptography standards in 2024. NSA mandates quantum-safe national security systems by Jan 2027. Every government, bank, and critical infrastructure operator must migrate to PQC regardless of when quantum computers can break encryption. This is revenue happening today, not in 2030.
+    </div>
+  </div>
+
+  <div class="connector"><span class="connector-label">accessed via</span></div>
+
+  <!-- L8: Cloud Platforms -->
+  <div class="layer app">
+    <div class="layer-header">
+      <div class="layer-icon">☁️</div>
+      <div class="layer-title">
+        <div class="layer-name">Cloud Quantum Platforms</div>
+        <div class="layer-desc">Where customers actually access quantum computers today — via API calls to cloud-hosted QPUs. AWS Braket, Azure Quantum, and IBM Quantum Network are the distribution channels.</div>
+      </div>
+      <div class="layer-badge badge-green">Revenue layer (small, growing)</div>
+    </div>
+    <div class="companies">
+      <div class="company incumbent"><div class="company-ticker">AMZN</div><div class="company-name">AWS Braket</div><div class="company-note">Multi-vendor: IonQ, Rigetti, QuEra, D-Wave, OQC</div></div>
+      <div class="company incumbent"><div class="company-ticker">MSFT</div><div class="company-name">Azure Quantum</div><div class="company-note">Hosts Quantinuum H-Series</div></div>
+      <div class="company incumbent"><div class="company-ticker">IBM</div><div class="company-name">IBM Quantum Platform</div><div class="company-note">127 organizations in Quantum Network</div></div>
+      <div class="company public best"><div class="company-ticker">IONQ</div><div class="company-name">IonQ Cloud</div><div class="company-note">$130M 2025 revenue. On all three major clouds.</div></div>
+    </div>
+  </div>
+
+  <div class="connector"><span class="connector-label">applied to</span></div>
+
+  <!-- L9: Applications -->
+  <div class="layer raw">
+    <div class="layer-header">
+      <div class="layer-icon">💊</div>
+      <div class="layer-title">
+        <div class="layer-name">End Applications (The Long Game)</div>
+        <div class="layer-desc">Where quantum computing's $2.7T projected value ultimately flows — but mostly 5–15 years out. Drug discovery and molecular simulation are the most likely first commercial wins.</div>
+      </div>
+      <div class="layer-badge badge-purple">5–15 year horizon</div>
+    </div>
+    <div class="companies">
+      <div class="company public"><div class="company-ticker">PFE/LLY</div><div class="company-name">Pharma (Drug Discovery)</div><div class="company-note">First likely quantum application. Simulation of molecular bonds.</div></div>
+      <div class="company public"><div class="company-ticker">GS/JPM</div><div class="company-name">Finance (Risk/Options)</div><div class="company-note">Portfolio optimization, Monte Carlo speedup</div></div>
+      <div class="company public"><div class="company-ticker">PLTR</div><div class="company-name">Defense/Intelligence</div><div class="company-note">Quantum sensing + simulation contracts</div></div>
+      <div class="company public"><div class="company-ticker">QBTS</div><div class="company-name">Logistics (Annealing)</div><div class="company-note">D-Wave's commercial sweet spot today</div></div>
+    </div>
+    <div class="callout purple">
+      <strong>🔮 The 10-year bull case</strong>
+      McKinsey projects $2.7 trillion in economic value from quantum computing by 2035. Drug discovery is first — simulating molecular structures at the quantum level could compress drug development from 12 years to 3. Financial modeling, logistics, and materials science follow. The AI analogy: 2015 NVDA is the control/foundry layer in 2026. The question is whether quantum reaches 2020-level adoption by 2030 or 2040.
+    </div>
+  </div>
+
+</div>
+
+<!-- TIMELINE -->
+<div class="timeline-wrap" style="max-width:940px;margin:0 auto 28px;padding:0 16px;">
+  <div class="section-label">→ Investment Horizon Map</div>
+  <div class="timeline">
+    <div class="trow">
+      <div class="trow-year">NOW<br>2026</div>
+      <div class="trow-body">
+        <div class="trow-title">PQC migration + enabling-layer infrastructure</div>
+        <div class="trow-desc">Post-quantum cryptography is mandated NOW. Government CHIPS money is flowing NOW. Foundry, control-electronics, and cryo investments are active. This is where capital can be deployed with the most near-term visibility.</div>
+      </div>
+      <div class="trow-tag tag-now">Invest now</div>
+    </div>
+    <div class="trow">
+      <div class="trow-year">1–2 YRS<br>2027–28</div>
+      <div class="trow-body">
+        <div class="trow-title">First useful quantum advantage + IBM Starling fault-tolerant machine</div>
+        <div class="trow-desc">IBM targets a 200 logical qubit, fault-tolerant system by 2029. The first real-world (non-proof-of-principle) quantum advantage in chemistry or optimization would be the catalyst event that moves every quantum stock dramatically higher.</div>
+      </div>
+      <div class="trow-tag tag-near">Catalyst watch</div>
+    </div>
+    <div class="trow">
+      <div class="trow-year">3–5 YRS<br>2028–31</div>
+      <div class="trow-body">
+        <div class="trow-title">Commercial quantum computing for pharma & finance</div>
+        <div class="trow-desc">Early enterprise quantum cloud revenue scaling. Foundry capacity constraints become acute as demand surges. The architecture winner becomes clear. IonQ, Quantinuum, or a dark horse (QuEra, PsiQuantum) emerges as the NVDA equivalent.</div>
+      </div>
+      <div class="trow-tag tag-mid">Position building</div>
+    </div>
+    <div class="trow">
+      <div class="trow-year">10+ YRS<br>2035+</div>
+      <div class="trow-body">
+        <div class="trow-title">Fault-tolerant quantum computing at scale — Q-Day threat materializes</div>
+        <div class="trow-desc">Broad fault tolerance achieved. Drug discovery timelines compress. Q-Day (quantum breaking RSA encryption) becomes credible. McKinsey's $2.7T value creation window opens. The winners here are unknowable today — position in the enabling layer now, rotate to application plays when the architecture winner is clear.</div>
+      </div>
+      <div class="trow-tag tag-long">Long horizon</div>
+    </div>
+  </div>
+</div>
+
+<!-- 15 STOCKS PANEL -->
+<div class="stocks-wrap">
+  <div class="stocks-header">
+    <div class="section-label" style="margin-bottom:0">→ 15 Quantum-Related Stocks to Know</div>
+    <div class="stocks-legend">
+      <div class="sleg"><div class="sleg-dot" style="background:#34d399"></div>Best option</div>
+      <div class="sleg"><div class="sleg-dot" style="background:#fbbf24"></div>Most upside &lt;$100</div>
+      <div class="sleg"><div class="sleg-dot" style="background:#f87171"></div>Speculative</div>
+    </div>
+  </div>
+  <div class="stocks-grid">
+
+    <!-- TOP PICK -->
+    <div class="stock-card top-pick">
+      <div class="stock-card-top">
+        <div class="stock-ticker">IONQ</div>
+        <div class="stock-price">~$32</div>
+      </div>
+      <div class="stock-name">IonQ, Inc.</div>
+      <div class="stock-desc">Only pure-play quantum company with $100M+ in real GAAP revenue ($130M in 2025, +202% YoY). Trapped-ion leader. 99.99% two-qubit fidelity world record. On AWS, Azure, and GCP. Acquiring SkyWater foundry.</div>
+      <div class="stock-meta">
+        <span class="stock-tag tag-layer">Qubit Platform + Cloud</span>
+        <span class="stock-tag tag-risk-high">High Risk</span>
+        <span class="stock-tag tag-horizon-3y">3–5yr hold</span>
+      </div>
+    </div>
+
+    <!-- MOST UPSIDE CHEAP -->
+    <div class="stock-card upside-cheap">
+      <div class="stock-card-top">
+        <div class="stock-ticker">FORM</div>
+        <div class="stock-price">~$28</div>
+      </div>
+      <div class="stock-name">FormFactor, Inc.</div>
+      <div class="stock-desc">Makes cryogenic probe stations (via HPD acquisition) used to test quantum chips at millikelvin temperatures. Core business is HBM/DRAM probe cards — so you get AI exposure PLUS quantum upside with profitable fundamentals. $785M FY2025 revenue.</div>
+      <div class="stock-meta">
+        <span class="stock-tag tag-layer">Cryo Test / Foundry</span>
+        <span class="stock-tag tag-risk-low">Lower Risk</span>
+        <span class="stock-tag tag-horizon-now">Buy now</span>
+      </div>
+    </div>
+
+    <!-- CARD 3 -->
+    <div class="stock-card">
+      <div class="stock-card-top">
+        <div class="stock-ticker">IBM</div>
+        <div class="stock-price">~$270</div>
+      </div>
+      <div class="stock-name">IBM Corporation</div>
+      <div class="stock-desc">Most credible quantum roadmap of any public company. Condor 1,121 qubits. Targets fault-tolerant system (Starling) by 2029. $1B CHIPS award for Anderon fab. Profitable, diversified — quantum is a call option on top of a real business.</div>
+      <div class="stock-meta">
+        <span class="stock-tag tag-layer">Platform + Foundry</span>
+        <span class="stock-tag tag-risk-low">Lower Risk</span>
+        <span class="stock-tag tag-horizon-3y">3–5yr</span>
+      </div>
+    </div>
+
+    <!-- CARD 4 -->
+    <div class="stock-card">
+      <div class="stock-card-top">
+        <div class="stock-ticker">GOOGL</div>
+        <div class="stock-price">~$369</div>
+      </div>
+      <div class="stock-name">Alphabet / Google</div>
+      <div class="stock-desc">First verifiable quantum advantage (Willow, Oct 2025). World-class research team. Quantum is a research asset embedded in a $2T company — you're not paying a premium for quantum speculation.</div>
+      <div class="stock-meta">
+        <span class="stock-tag tag-layer">Qubit Platform</span>
+        <span class="stock-tag tag-risk-low">Lower Risk</span>
+        <span class="stock-tag tag-horizon-3y">5–10yr</span>
+      </div>
+    </div>
+
+    <!-- CARD 5 -->
+    <div class="stock-card">
+      <div class="stock-card-top">
+        <div class="stock-ticker">GFS</div>
+        <div class="stock-price">~$38</div>
+      </div>
+      <div class="stock-name">GlobalFoundries</div>
+      <div class="stock-desc">Only public foundry supporting ALL 5 qubit modalities. $375M CHIPS award. The TSMC analogy — foundries win before the computers do, and GFS supports whichever architecture wins the race. Also benefits from AI chip reshoring.</div>
+      <div class="stock-meta">
+        <span class="stock-tag tag-layer">Foundry</span>
+        <span class="stock-tag tag-risk-mid">Moderate Risk</span>
+        <span class="stock-tag tag-horizon-now">Buy now</span>
+      </div>
+    </div>
+
+    <!-- CARD 6 -->
+    <div class="stock-card">
+      <div class="stock-card-top">
+        <div class="stock-ticker">KEYS</div>
+        <div class="stock-price">~$156</div>
+      </div>
+      <div class="stock-name">Keysight Technologies</div>
+      <div class="stock-desc">Makes quantum control electronics and EDA software used to design and test quantum chips. $5.37B in FY2025 revenue. Quantum exposure is a growth kicker on top of a profitable test-and-measurement core. Modality-agnostic.</div>
+      <div class="stock-meta">
+        <span class="stock-tag tag-layer">Control Electronics</span>
+        <span class="stock-tag tag-risk-low">Lower Risk</span>
+        <span class="stock-tag tag-horizon-now">Buy now</span>
+      </div>
+    </div>
+
+    <!-- CARD 7 -->
+    <div class="stock-card">
+      <div class="stock-card-top">
+        <div class="stock-ticker">NVDA</div>
+        <div class="stock-price">~$209</div>
+      </div>
+      <div class="stock-name">NVIDIA Corporation</div>
+      <div class="stock-desc">CUDA-Q positions NVDA as the classical-quantum bridge layer. Invested in QuEra (neutral atom), Quantinuum (trapped ion), and PsiQuantum (photonic). Same picks-and-shovels logic as in AI — the runtime layer wins across all architectures.</div>
+      <div class="stock-meta">
+        <span class="stock-tag tag-layer">Error Correction / Hybrid</span>
+        <span class="stock-tag tag-risk-low">Lower Risk</span>
+        <span class="stock-tag tag-horizon-3y">You own this</span>
+      </div>
+    </div>
+
+    <!-- CARD 8 -->
+    <div class="stock-card">
+      <div class="stock-card-top">
+        <div class="stock-ticker">MSFT</div>
+        <div class="stock-price">~$452</div>
+      </div>
+      <div class="stock-name">Microsoft</div>
+      <div class="stock-desc">Topological qubit (Majorana 1) is highest risk/highest reward in quantum. If it works, it leapfrogs all competitors. If not (experts are split), MSFT is still a $3T business with Azure Quantum access. Binary quantum outcome priced into a diversified giant.</div>
+      <div class="stock-meta">
+        <span class="stock-tag tag-layer">Topological Qubit</span>
+        <span class="stock-tag tag-risk-mid">Moderate Risk</span>
+        <span class="stock-tag tag-horizon-10y">10yr bet</span>
+      </div>
+    </div>
+
+    <!-- CARD 9 -->
+    <div class="stock-card">
+      <div class="stock-card-top">
+        <div class="stock-ticker">HONEYWELL</div>
+        <div class="stock-price">~$230</div>
+      </div>
+      <div class="stock-name">Honeywell International</div>
+      <div class="stock-desc">Owns ~48% of Quantinuum post-IPO — the trapped-ion company with the world record for logical qubits (48 logical / 98 physical). Cleanest large-cap proxy for trapped-ion quantum. Stable industrial business provides the floor.</div>
+      <div class="stock-meta">
+        <span class="stock-tag tag-layer">Quantinuum Parent</span>
+        <span class="stock-tag tag-risk-low">Lower Risk</span>
+        <span class="stock-tag tag-horizon-3y">3–5yr</span>
+      </div>
+    </div>
+
+    <!-- CARD 10 -->
+    <div class="stock-card">
+      <div class="stock-card-top">
+        <div class="stock-ticker">QBTS</div>
+        <div class="stock-price">~$14</div>
+      </div>
+      <div class="stock-name">D-Wave Quantum</div>
+      <div class="stock-desc">Most commercially mature pure-play — 100+ revenue-generating customers. Annealing approach works NOW for specific optimization problems (logistics, scheduling). $24.6M FY2025 revenue, 83% gross margin. ~$100M CHIPS award. Niche but real.</div>
+      <div class="stock-meta">
+        <span class="stock-tag tag-layer">Quantum Annealing</span>
+        <span class="stock-tag tag-risk-mid">Moderate Risk</span>
+        <span class="stock-tag tag-horizon-now">Commercial today</span>
+      </div>
+    </div>
+
+    <!-- CARD 11 -->
+    <div class="stock-card">
+      <div class="stock-card-top">
+        <div class="stock-ticker">QNT</div>
+        <div class="stock-price">~$65</div>
+      </div>
+      <div class="stock-name">Quantinuum</div>
+      <div class="stock-desc">Freshly public (IPO June 4, 2026, $1.68B raised). Holds the commercial record for logical qubits (48 logical / 98 physical on Helios). Trapped-ion leader. Honeywell backing + Azure Quantum distribution. Best pure-play quality/risk ratio.</div>
+      <div class="stock-meta">
+        <span class="stock-tag tag-layer">Trapped-Ion Platform</span>
+        <span class="stock-tag tag-risk-mid">Moderate Risk</span>
+        <span class="stock-tag tag-horizon-3y">3–5yr</span>
+      </div>
+    </div>
+
+    <!-- CARD 12 -->
+    <div class="stock-card">
+      <div class="stock-card-top">
+        <div class="stock-ticker">AMPG</div>
+        <div class="stock-price">~$4</div>
+      </div>
+      <div class="stock-name">AmpliTech Group</div>
+      <div class="stock-desc">Makes cryogenic low-noise amplifiers (LNAs) — one per qubit in superconducting systems. ~$25M revenue, mostly 5G/defense, but quantum LNA exposure is real and growing. Micro-cap lottery ticket on the control electronics layer. Extreme risk.</div>
+      <div class="stock-meta">
+        <span class="stock-tag tag-layer">Control Electronics</span>
+        <span class="stock-tag tag-risk-high">Spec Play</span>
+        <span class="stock-tag tag-horizon-10y">Lottery ticket</span>
+      </div>
+    </div>
+
+    <!-- CARD 13 - CAUTION -->
+    <div class="stock-card caution">
+      <div class="stock-card-top">
+        <div class="stock-ticker">RGTI</div>
+        <div class="stock-price">~$22</div>
+      </div>
+      <div class="stock-name">Rigetti Computing</div>
+      <div class="stock-desc">Real technology (superconducting, 108 qubits) but dangerous valuation — ~$8B market cap on $7M of revenue (~1,000x P/S). ~$100M CHIPS award helps. Insiders net-sold $396M. Highest valuation-to-fundamentals gap in the sector. Approach with caution.</div>
+      <div class="stock-meta">
+        <span class="stock-tag tag-layer">Superconducting</span>
+        <span class="stock-tag tag-risk-high">Extreme Risk</span>
+        <span class="stock-tag tag-horizon-10y">Speculative only</span>
+      </div>
+    </div>
+
+    <!-- CARD 14 - CAUTION -->
+    <div class="stock-card caution">
+      <div class="stock-card-top">
+        <div class="stock-ticker">QUBT</div>
+        <div class="stock-price">~$16</div>
+      </div>
+      <div class="stock-name">Quantum Computing Inc.</div>
+      <div class="stock-desc">TFLN photonic foundry (Tempe AZ). FY2025 revenue $682K — market cap ~$2.5B = ~2,500x P/S. Has raised $1.5B+ while generating almost no revenue. Highest hype-to-fundamentals ratio in the sector. Treat as a lottery ticket at best, avoid at worst.</div>
+      <div class="stock-meta">
+        <span class="stock-tag tag-layer">Photonic Foundry</span>
+        <span class="stock-tag tag-risk-high">⚠ Highest Risk</span>
+        <span class="stock-tag tag-horizon-10y">Lottery only</span>
+      </div>
+    </div>
+
+    <!-- CARD 15 -->
+    <div class="stock-card">
+      <div class="stock-card-top">
+        <div class="stock-ticker">QTUM ETF</div>
+        <div class="stock-price">~$67</div>
+      </div>
+      <div class="stock-name">Defiance Quantum ETF</div>
+      <div class="stock-desc">Basket of 71 quantum and deep-tech companies. Equal-weight diversification removes single-stock blowup risk. If you want quantum exposure without picking architecture winners, this is the cleanest vehicle. Includes IBM, IonQ, Honeywell, and enabling-layer names.</div>
+      <div class="stock-meta">
+        <span class="stock-tag tag-layer">Diversified Basket</span>
+        <span class="stock-tag tag-risk-mid">Moderate Risk</span>
+        <span class="stock-tag tag-horizon-3y">All horizons</span>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="footer">
+  Quantum Computing Supply Chain Map · June 15, 2026 · Research purposes only — not financial advice · Elston Allen
+</div>
+
+</body>
+</html>

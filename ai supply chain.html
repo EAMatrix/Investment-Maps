@@ -1,0 +1,876 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Supply Chain Map</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: #050810;
+    --surface: #0d1117;
+    --border: #1e2535;
+    --text: #e8edf5;
+    --muted: #5a6478;
+    --accent: #00d4ff;
+    --accent2: #7c3aed;
+    --gold: #f59e0b;
+    --green: #10b981;
+    --red: #ef4444;
+    --orange: #f97316;
+
+    /* Layer colors */
+    --l1: #1a0a2e;
+    --l1b: #7c3aed;
+    --l2: #0a1a2e;
+    --l2b: #0ea5e9;
+    --l3: #0a2e1a;
+    --l3b: #10b981;
+    --l4: #2e1a0a;
+    --l4b: #f97316;
+    --l5: #2e0a0a;
+    --l5b: #ef4444;
+    --l6: #1a2e0a;
+    --l6b: #84cc16;
+    --sandisk: #f59e0b;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Space Grotesk', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* HEADER */
+  .header {
+    padding: 32px 24px 16px;
+    border-bottom: 1px solid var(--border);
+    background: linear-gradient(180deg, #0a0f1e 0%, var(--bg) 100%);
+  }
+  .header-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .header h1 {
+    font-size: clamp(22px, 5vw, 36px);
+    font-weight: 700;
+    color: var(--text);
+    line-height: 1.1;
+  }
+  .header h1 span {
+    color: var(--accent);
+  }
+  .header-sub {
+    margin-top: 8px;
+    font-size: 13px;
+    color: var(--muted);
+    max-width: 600px;
+  }
+
+  /* LEGEND */
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: var(--muted);
+  }
+  .legend-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+  }
+  .legend-item.owned { color: var(--text); font-weight: 600; }
+  .legend-item.sandisk-leg { color: var(--gold); font-weight: 600; }
+
+  /* MAIN GRID */
+  .chain {
+    padding: 24px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    max-width: 900px;
+    margin: 0 auto;
+  }
+
+  /* CONNECTOR */
+  .connector {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 28px;
+    color: var(--muted);
+    font-size: 18px;
+    position: relative;
+  }
+  .connector::before {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: linear-gradient(180deg, transparent, var(--border), transparent);
+  }
+  .connector-label {
+    background: var(--bg);
+    padding: 0 8px;
+    font-family: 'Space Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    text-transform: uppercase;
+    z-index: 1;
+  }
+
+  /* LAYER */
+  .layer {
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  .layer:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  }
+
+  .layer-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    cursor: pointer;
+  }
+  .layer-num {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    min-width: 20px;
+  }
+  .layer-title {
+    flex: 1;
+  }
+  .layer-name {
+    font-size: 14px;
+    font-weight: 600;
+  }
+  .layer-desc {
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+  .layer-tag {
+    font-family: 'Space Mono', monospace;
+    font-size: 9px;
+    padding: 3px 8px;
+    border-radius: 20px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    white-space: nowrap;
+  }
+  .tag-bottleneck {
+    background: rgba(239,68,68,0.15);
+    color: #ef4444;
+    border: 1px solid rgba(239,68,68,0.3);
+  }
+  .tag-hot {
+    background: rgba(245,158,11,0.15);
+    color: #f59e0b;
+    border: 1px solid rgba(245,158,11,0.3);
+  }
+  .tag-emerging {
+    background: rgba(124,58,237,0.15);
+    color: #a78bfa;
+    border: 1px solid rgba(124,58,237,0.3);
+  }
+  .tag-mature {
+    background: rgba(90,100,120,0.15);
+    color: var(--muted);
+    border: 1px solid var(--border);
+  }
+
+  /* COMPANIES GRID */
+  .companies {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 0 16px 14px;
+  }
+
+  .company {
+    display: flex;
+    flex-direction: column;
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: 1px solid transparent;
+    cursor: default;
+    min-width: 80px;
+    transition: all 0.15s ease;
+    position: relative;
+  }
+  .company:hover {
+    transform: scale(1.03);
+  }
+  .company-ticker {
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1;
+  }
+  .company-name {
+    font-size: 10px;
+    margin-top: 3px;
+    opacity: 0.7;
+    line-height: 1.2;
+  }
+  .company-note {
+    font-size: 9px;
+    margin-top: 4px;
+    opacity: 0.55;
+    font-style: italic;
+  }
+
+  /* Company states */
+  .company.owned {
+    border-color: rgba(0,212,255,0.5);
+    background: rgba(0,212,255,0.06);
+  }
+  .company.owned .company-ticker { color: var(--accent); }
+  .company.owned::after {
+    content: '▲ YOU OWN';
+    position: absolute;
+    top: -8px;
+    right: 4px;
+    font-family: 'Space Mono', monospace;
+    font-size: 7px;
+    color: var(--accent);
+    background: var(--bg);
+    padding: 0 3px;
+    letter-spacing: 0.05em;
+  }
+
+  .company.sandisk-co {
+    border-color: rgba(245,158,11,0.6);
+    background: rgba(245,158,11,0.08);
+    box-shadow: 0 0 12px rgba(245,158,11,0.15);
+  }
+  .company.sandisk-co .company-ticker { color: var(--gold); }
+  .company.sandisk-co::after {
+    content: '★ SANDISK';
+    position: absolute;
+    top: -8px;
+    right: 4px;
+    font-family: 'Space Mono', monospace;
+    font-size: 7px;
+    color: var(--gold);
+    background: var(--bg);
+    padding: 0 3px;
+    letter-spacing: 0.05em;
+  }
+
+  .company.watch {
+    border-color: rgba(124,58,237,0.4);
+    background: rgba(124,58,237,0.05);
+  }
+  .company.watch .company-ticker { color: #a78bfa; }
+
+  .company.default {
+    border-color: var(--border);
+    background: rgba(255,255,255,0.02);
+  }
+  .company.default .company-ticker { color: var(--text); }
+
+  /* BOTTLENECK CALLOUT */
+  .bottleneck-box {
+    margin: 6px 16px 14px;
+    padding: 10px 14px;
+    border-radius: 8px;
+    border-left: 3px solid;
+    font-size: 11px;
+    line-height: 1.5;
+  }
+  .bottleneck-box.red {
+    border-color: var(--red);
+    background: rgba(239,68,68,0.06);
+    color: #fca5a5;
+  }
+  .bottleneck-box.amber {
+    border-color: var(--gold);
+    background: rgba(245,158,11,0.06);
+    color: #fcd34d;
+  }
+  .bottleneck-box.purple {
+    border-color: #a78bfa;
+    background: rgba(124,58,237,0.06);
+    color: #c4b5fd;
+  }
+  .bottleneck-box strong {
+    display: block;
+    margin-bottom: 3px;
+    font-size: 10px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    font-family: 'Space Mono', monospace;
+  }
+
+  /* LAYER COLORS */
+  .layer.l1 { background: var(--l1); border-color: rgba(124,58,237,0.25); }
+  .layer.l1 .layer-name { color: #c084fc; }
+  .layer.l2 { background: var(--l2); border-color: rgba(14,165,233,0.25); }
+  .layer.l2 .layer-name { color: #38bdf8; }
+  .layer.l3 { background: var(--l3); border-color: rgba(16,185,129,0.25); }
+  .layer.l3 .layer-name { color: #34d399; }
+  .layer.l4 { background: var(--l4); border-color: rgba(249,115,22,0.25); }
+  .layer.l4 .layer-name { color: #fb923c; }
+  .layer.l4-gold { background: rgba(245,158,11,0.06); border-color: rgba(245,158,11,0.4); box-shadow: 0 0 20px rgba(245,158,11,0.1); }
+  .layer.l4-gold .layer-name { color: var(--gold); }
+  .layer.l5 { background: var(--l5); border-color: rgba(239,68,68,0.25); }
+  .layer.l5 .layer-name { color: #f87171; }
+  .layer.l6 { background: var(--l6); border-color: rgba(132,204,22,0.25); }
+  .layer.l6 .layer-name { color: #a3e635; }
+
+  /* SANDISK SPOTLIGHT */
+  .sandisk-spotlight {
+    margin: 0 16px 24px;
+    padding: 16px;
+    border-radius: 12px;
+    border: 1px solid rgba(245,158,11,0.4);
+    background: linear-gradient(135deg, rgba(245,158,11,0.05), rgba(249,115,22,0.05));
+    box-shadow: 0 0 30px rgba(245,158,11,0.08);
+  }
+  .sandisk-spotlight h3 {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    color: var(--gold);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  .spotlight-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 10px;
+  }
+  .spotlight-item {
+    padding: 10px;
+    background: rgba(0,0,0,0.3);
+    border-radius: 8px;
+    border: 1px solid rgba(245,158,11,0.2);
+  }
+  .spotlight-item .s-label {
+    font-size: 9px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-family: 'Space Mono', monospace;
+    margin-bottom: 4px;
+  }
+  .spotlight-item .s-val {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--gold);
+  }
+  .spotlight-item .s-sub {
+    font-size: 10px;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+
+  /* OPPORTUNITY PANEL */
+  .opp-panel {
+    margin: 0 16px 32px;
+    padding: 20px;
+    border-radius: 12px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+  }
+  .opp-panel h3 {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    color: var(--accent);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+  .opp-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .opp-row {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    padding: 12px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: rgba(255,255,255,0.015);
+    cursor: default;
+    transition: background 0.15s;
+  }
+  .opp-row:hover { background: rgba(255,255,255,0.03); }
+  .opp-rank {
+    font-family: 'Space Mono', monospace;
+    font-size: 18px;
+    font-weight: 700;
+    min-width: 32px;
+    line-height: 1;
+  }
+  .opp-body { flex: 1; }
+  .opp-title {
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 3px;
+  }
+  .opp-desc {
+    font-size: 11px;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+  .opp-tickers {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 6px;
+  }
+  .opp-ticker {
+    font-family: 'Space Mono', monospace;
+    font-size: 9px;
+    padding: 2px 7px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    color: var(--muted);
+  }
+  .opp-ticker.hot {
+    border-color: rgba(245,158,11,0.4);
+    color: var(--gold);
+    background: rgba(245,158,11,0.06);
+  }
+  .opp-urgency {
+    font-family: 'Space Mono', monospace;
+    font-size: 9px;
+    padding: 3px 8px;
+    border-radius: 20px;
+    white-space: nowrap;
+    align-self: flex-start;
+  }
+  .urgency-now { background: rgba(239,68,68,0.15); color: #f87171; border: 1px solid rgba(239,68,68,0.3); }
+  .urgency-soon { background: rgba(245,158,11,0.15); color: var(--gold); border: 1px solid rgba(245,158,11,0.3); }
+  .urgency-watch { background: rgba(124,58,237,0.15); color: #a78bfa; border: 1px solid rgba(124,58,237,0.3); }
+
+  /* FOOTER */
+  .footer {
+    padding: 16px 24px;
+    border-top: 1px solid var(--border);
+    font-size: 10px;
+    color: var(--muted);
+    font-family: 'Space Mono', monospace;
+  }
+
+  /* Scroll hint on mobile */
+  @media (max-width: 600px) {
+    .companies { gap: 5px; }
+    .company { min-width: 70px; padding: 6px 8px; }
+    .company-ticker { font-size: 11px; }
+    .spotlight-grid { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-label">Investment Research · AI Infrastructure</div>
+  <h1>The <span>AI Supply Chain</span> Map</h1>
+  <div class="header-sub">Every layer that makes AI possible — from raw materials to your ChatGPT prompt. Tap any layer to explore. Your holdings highlighted in blue. Sandisk in gold.</div>
+</div>
+
+<div class="legend">
+  <div class="legend-item owned">
+    <div class="legend-dot" style="background:#00d4ff"></div>
+    You own this
+  </div>
+  <div class="legend-item sandisk-leg">
+    <div class="legend-dot" style="background:#f59e0b"></div>
+    Sandisk (SNDK)
+  </div>
+  <div class="legend-item">
+    <div class="legend-dot" style="background:#a78bfa"></div>
+    Watch list
+  </div>
+  <div class="legend-item">
+    <div class="legend-dot" style="background:#ef4444; border-radius:2px"></div>
+    🔴 Active bottleneck
+  </div>
+  <div class="legend-item">
+    <div class="legend-dot" style="background:#f59e0b; border-radius:2px"></div>
+    🟡 Emerging pressure
+  </div>
+</div>
+
+<div class="chain">
+
+  <!-- LAYER 1: Raw Materials -->
+  <div class="layer l1">
+    <div class="layer-header">
+      <div class="layer-num">01</div>
+      <div class="layer-title">
+        <div class="layer-name">Raw Materials & Mining</div>
+        <div class="layer-desc">Silicon, rare earths, cobalt, copper, specialty gases — the physical inputs that everything else is built from</div>
+      </div>
+      <div class="layer-tag tag-emerging">Emerging pressure</div>
+    </div>
+    <div class="companies">
+      <div class="company default"><div class="company-ticker">MP</div><div class="company-name">MP Materials</div><div class="company-note">Rare earth mining</div></div>
+      <div class="company default"><div class="company-ticker">CREE</div><div class="company-name">Wolfspeed</div><div class="company-note">Silicon carbide</div></div>
+      <div class="company default"><div class="company-ticker">FCX</div><div class="company-name">Freeport-McMoRan</div><div class="company-note">Copper</div></div>
+      <div class="company default"><div class="company-ticker">ALB</div><div class="company-name">Albemarle</div><div class="company-note">Lithium</div></div>
+      <div class="company default"><div class="company-ticker">ENTG</div><div class="company-name">Entegris</div><div class="company-note">Specialty gases/chemicals</div></div>
+    </div>
+    <div class="bottleneck-box amber">
+      <strong>🟡 Emerging pressure</strong>
+      Rare earth supply is ~90% controlled by China. U.S. and allied nations are scrambling to build domestic supply chains — MP Materials is the only U.S. rare earth mine. Copper demand for data center power infrastructure is surging.
+    </div>
+  </div>
+
+  <div class="connector"><span class="connector-label">refined into wafers</span></div>
+
+  <!-- LAYER 2: Wafer Manufacturing -->
+  <div class="layer l2">
+    <div class="layer-header">
+      <div class="layer-num">02</div>
+      <div class="layer-title">
+        <div class="layer-name">Wafer & Equipment Manufacturing</div>
+        <div class="layer-desc">The machines and substrates that make semiconductor fabrication possible — the true chokepoint of the entire industry</div>
+      </div>
+      <div class="layer-tag tag-bottleneck">🔴 Critical bottleneck</div>
+    </div>
+    <div class="companies">
+      <div class="company default"><div class="company-ticker">ASML</div><div class="company-name">ASML Holding</div><div class="company-note">Only EUV lithography maker on earth</div></div>
+      <div class="company default"><div class="company-ticker">AMAT</div><div class="company-name">Applied Materials</div><div class="company-note">Deposition & etch</div></div>
+      <div class="company default"><div class="company-ticker">LRCX</div><div class="company-name">Lam Research</div><div class="company-note">Etch equipment</div></div>
+      <div class="company default"><div class="company-ticker">KLAC</div><div class="company-name">KLA Corp</div><div class="company-note">Process control/inspection</div></div>
+      <div class="company default"><div class="company-ticker">SUMCO</div><div class="company-name">Sumco (Japan)</div><div class="company-note">Silicon wafers</div></div>
+      <div class="company default"><div class="company-ticker">SHIN-ETSU</div><div class="company-name">Shin-Etsu</div><div class="company-note">Silicon wafers</div></div>
+    </div>
+    <div class="bottleneck-box red">
+      <strong>🔴 ASML is the single biggest chokepoint in all of AI</strong>
+      ASML is the only company on Earth that makes extreme ultraviolet (EUV) lithography machines — required to print chips at 5nm and below. There is no alternative supplier. Each machine takes a year to build, costs $380M+, and ASML can only make ~60/year. Export controls mean China cannot buy them at all.
+    </div>
+  </div>
+
+  <div class="connector"><span class="connector-label">fabricated into chips</span></div>
+
+  <!-- LAYER 3: Chip Fabrication (Foundries) -->
+  <div class="layer l3">
+    <div class="layer-header">
+      <div class="layer-num">03</div>
+      <div class="layer-title">
+        <div class="layer-name">Chip Fabrication (Foundries)</div>
+        <div class="layer-desc">Companies that physically manufacture chips — the factories of the semiconductor world. Most chip designers don't own fabs.</div>
+      </div>
+      <div class="layer-tag tag-bottleneck">🔴 Critical bottleneck</div>
+    </div>
+    <div class="companies">
+      <div class="company default"><div class="company-ticker">TSM</div><div class="company-name">TSMC</div><div class="company-note">Makes NVDA/AAPL/AMD chips. 90%+ of advanced node market.</div></div>
+      <div class="company default"><div class="company-ticker">INTC</div><div class="company-name">Intel Foundry</div><div class="company-note">Trying to compete with TSMC</div></div>
+      <div class="company default"><div class="company-ticker">SSNLF</div><div class="company-name">Samsung Foundry</div><div class="company-note">TSMC's closest competitor</div></div>
+    </div>
+    <div class="bottleneck-box red">
+      <strong>🔴 TSMC is an existential concentration risk</strong>
+      TSMC makes ~92% of the world's most advanced chips (below 5nm). It is located in Taiwan. Every AI chip — NVDA, AMD, Apple — is manufactured there. This is why the U.S. CHIPS Act is pushing $52B+ into domestic fab construction. TSMC Arizona fabs won't reach full capacity until 2028.
+    </div>
+  </div>
+
+  <div class="connector"><span class="connector-label">packaged & assembled</span></div>
+
+  <!-- LAYER 4: Advanced Packaging -->
+  <div class="layer l4">
+    <div class="layer-header">
+      <div class="layer-num">04</div>
+      <div class="layer-title">
+        <div class="layer-name">Advanced Packaging & Assembly</div>
+        <div class="layer-desc">CoWoS, HBM stacking, chiplet integration — how multiple dies are combined into a single AI accelerator package. Newly critical.</div>
+      </div>
+      <div class="layer-tag tag-bottleneck">🔴 Active bottleneck</div>
+    </div>
+    <div class="companies">
+      <div class="company default"><div class="company-ticker">ASX</div><div class="company-name">ASE Technology</div><div class="company-note">Largest OSAT in world</div></div>
+      <div class="company default"><div class="company-ticker">AMKR</div><div class="company-name">Amkor Technology</div><div class="company-note">CoWoS packaging</div></div>
+      <div class="company default"><div class="company-ticker">TSM</div><div class="company-name">TSMC CoWoS</div><div class="company-note">In-house packaging for NVDA</div></div>
+    </div>
+    <div class="bottleneck-box red">
+      <strong>🔴 CoWoS capacity is limiting NVDA shipments RIGHT NOW</strong>
+      NVDA's Blackwell GPUs require CoWoS-L packaging — an advanced process only TSMC can do at scale. In 2024-2025, CoWoS capacity was so constrained it was the primary limiter on how many H100/H200 GPUs NVDA could ship. This is why AMKR is a sleeper opportunity.
+    </div>
+  </div>
+
+  <div class="connector"><span class="connector-label">needs memory & storage</span></div>
+
+  <!-- LAYER 4B: Memory & Storage — SANDISK LIVES HERE -->
+  <div class="layer l4-gold">
+    <div class="layer-header">
+      <div class="layer-num">04B</div>
+      <div class="layer-title">
+        <div class="layer-name">Memory & Storage</div>
+        <div class="layer-desc">HBM, DRAM, and NAND flash — every AI server needs massive amounts of fast memory and persistent storage. This is where Sandisk and Micron live.</div>
+      </div>
+      <div class="layer-tag tag-hot">★ Sandisk's Layer</div>
+    </div>
+    <div class="companies">
+      <div class="company sandisk-co"><div class="company-ticker">SNDK</div><div class="company-name">Sandisk</div><div class="company-note">NAND flash storage. +2,850% in 1yr.</div></div>
+      <div class="company owned"><div class="company-ticker">MU</div><div class="company-name">Micron Technology</div><div class="company-note">HBM + DRAM + NAND. You own this.</div></div>
+      <div class="company default"><div class="company-ticker">SSNLF</div><div class="company-name">Samsung Memory</div><div class="company-note">#1 HBM supplier globally</div></div>
+      <div class="company default"><div class="company-ticker">000660.KS</div><div class="company-name">SK Hynix</div><div class="company-note">#1 HBM4 supplier to NVDA</div></div>
+    </div>
+    <div class="bottleneck-box amber">
+      <strong>🟡 Why Sandisk went parabolic — and why MU followed</strong>
+      HBM (High Bandwidth Memory) is physically stacked on top of every AI GPU. Each Blackwell GPU uses 192GB of HBM4 and there are only 3 suppliers globally. NAND flash (Sandisk's product) powers the storage layer of every AI data center. The AI compute supercycle created a shortage across the entire memory stack simultaneously.
+    </div>
+  </div>
+
+  <div class="connector"><span class="connector-label">connected via</span></div>
+
+  <!-- LAYER 5: Chip Design (Fabless) -->
+  <div class="layer l5">
+    <div class="layer-header">
+      <div class="layer-num">05</div>
+      <div class="layer-title">
+        <div class="layer-name">AI Chip Design (Fabless)</div>
+        <div class="layer-desc">Companies that design AI accelerators, custom ASICs, and networking chips — but outsource manufacturing to TSMC/Samsung</div>
+      </div>
+      <div class="layer-tag tag-hot">🔥 Where the money is now</div>
+    </div>
+    <div class="companies">
+      <div class="company owned"><div class="company-ticker">NVDA</div><div class="company-name">NVIDIA</div><div class="company-note">GPU + CUDA. You own this.</div></div>
+      <div class="company owned"><div class="company-ticker">AVGO</div><div class="company-name">Broadcom</div><div class="company-note">Custom ASICs. You own this.</div></div>
+      <div class="company owned"><div class="company-ticker">MRVL</div><div class="company-name">Marvell</div><div class="company-note">Custom ASICs + interconnect. You own this.</div></div>
+      <div class="company default"><div class="company-ticker">AMD</div><div class="company-name">AMD</div><div class="company-note">MI300X AI GPUs</div></div>
+      <div class="company default"><div class="company-ticker">INTC</div><div class="company-name">Intel</div><div class="company-note">Gaudi accelerators (struggling)</div></div>
+      <div class="company watch"><div class="company-ticker">ALCHIP</div><div class="company-name">Alchip</div><div class="company-note">Custom ASIC design services</div></div>
+    </div>
+  </div>
+
+  <div class="connector"><span class="connector-label">connected & powered by</span></div>
+
+  <!-- LAYER 6: Networking & Interconnect -->
+  <div class="layer l6">
+    <div class="layer-header">
+      <div class="layer-num">06</div>
+      <div class="layer-title">
+        <div class="layer-name">Networking, Interconnect & Power</div>
+        <div class="layer-desc">How AI chips talk to each other across racks and buildings — the next major bottleneck as data centers scale to multi-GW campuses</div>
+      </div>
+      <div class="layer-tag tag-emerging">🟡 Next bottleneck</div>
+    </div>
+    <div class="companies">
+      <div class="company default"><div class="company-ticker">ANET</div><div class="company-name">Arista Networks</div><div class="company-note">AI data center switching</div></div>
+      <div class="company owned"><div class="company-ticker">MRVL</div><div class="company-name">Marvell</div><div class="company-note">Optical DSPs + Teralynx switch. You own.</div></div>
+      <div class="company default"><div class="company-ticker">CSCO</div><div class="company-name">Cisco</div><div class="company-note">Enterprise AI networking</div></div>
+      <div class="company watch"><div class="company-ticker">CIEN</div><div class="company-name">Ciena</div><div class="company-note">Optical networking</div></div>
+      <div class="company watch"><div class="company-ticker">VIAV</div><div class="company-name">Viavi Solutions</div><div class="company-note">Optical test & measurement</div></div>
+      <div class="company watch"><div class="company-ticker">EQIX</div><div class="company-name">Equinix</div><div class="company-note">Interconnection real estate</div></div>
+    </div>
+    <div class="bottleneck-box purple">
+      <strong>🟡 Optical interconnect is the next big trade</strong>
+      As AI clusters scale from 100K to 1M GPUs, copper cables physically can't carry the bandwidth needed. Optical interconnect (light-based data transmission) is the only solution. MRVL's Celestial AI acquisition ($3.25B) and new Teralynx T100 switch are bets directly on this thesis.
+    </div>
+  </div>
+
+  <div class="connector"><span class="connector-label">runs inside</span></div>
+
+  <!-- LAYER 7: Data Center Infrastructure -->
+  <div class="layer l1">
+    <div class="layer-header">
+      <div class="layer-num">07</div>
+      <div class="layer-title">
+        <div class="layer-name">Data Center Infrastructure & Power</div>
+        <div class="layer-desc">The physical buildings, power systems, cooling, and land that house all AI compute. Power is becoming the #1 constraint.</div>
+      </div>
+      <div class="layer-tag tag-bottleneck">🔴 Power is the new bottleneck</div>
+    </div>
+    <div class="companies">
+      <div class="company default"><div class="company-ticker">EQIX</div><div class="company-name">Equinix</div><div class="company-note">Data center REIT</div></div>
+      <div class="company default"><div class="company-ticker">DLR</div><div class="company-name">Digital Realty</div><div class="company-note">Data center REIT</div></div>
+      <div class="company default"><div class="company-ticker">VST</div><div class="company-name">Vistra Energy</div><div class="company-note">Power generation</div></div>
+      <div class="company watch"><div class="company-ticker">CEG</div><div class="company-name">Constellation Energy</div><div class="company-note">Nuclear power for AI</div></div>
+      <div class="company watch"><div class="company-ticker">ETN</div><div class="company-name">Eaton Corp</div><div class="company-note">Power management</div></div>
+      <div class="company watch"><div class="company-ticker">VRT</div><div class="company-name">Vertiv</div><div class="company-note">Data center cooling & power</div></div>
+      <div class="company watch"><div class="company-ticker">SMCI</div><div class="company-name">Super Micro</div><div class="company-note">AI server assembly</div></div>
+    </div>
+    <div class="bottleneck-box red">
+      <strong>🔴 Power is the next Sandisk-level opportunity</strong>
+      A single GB200 NVL72 rack (72 Blackwell GPUs) draws 120kW of power. A 100,000-GPU cluster needs the equivalent power of a small city. The U.S. grid was not built for this. Nuclear (CEG), gas peakers (VST), and power management (VRT, ETN) are the infrastructure plays that don't require picking chip winners.
+    </div>
+  </div>
+
+  <div class="connector"><span class="connector-label">built on top of</span></div>
+
+  <!-- LAYER 8: Hyperscalers & Cloud -->
+  <div class="layer l2">
+    <div class="layer-header">
+      <div class="layer-num">08</div>
+      <div class="layer-title">
+        <div class="layer-name">Hyperscalers & Cloud Platforms</div>
+        <div class="layer-desc">The companies that buy all the chips, build all the data centers, and sell AI compute to the world as a service</div>
+      </div>
+      <div class="layer-tag tag-mature">Mature / Owned</div>
+    </div>
+    <div class="companies">
+      <div class="company owned"><div class="company-ticker">GOOGL</div><div class="company-name">Alphabet / Google</div><div class="company-note">GCP + Gemini + TPUs. You own this.</div></div>
+      <div class="company default"><div class="company-ticker">MSFT</div><div class="company-name">Microsoft</div><div class="company-note">Azure + OpenAI partnership</div></div>
+      <div class="company default"><div class="company-ticker">AMZN</div><div class="company-name">Amazon</div><div class="company-note">AWS + Trainium/Inferentia ASICs</div></div>
+      <div class="company default"><div class="company-ticker">META</div><div class="company-name">Meta</div><div class="company-note">Llama models + MTIA ASIC</div></div>
+    </div>
+  </div>
+
+  <div class="connector"><span class="connector-label">enables</span></div>
+
+  <!-- LAYER 9: AI Software / Applications -->
+  <div class="layer l6">
+    <div class="layer-header">
+      <div class="layer-num">09</div>
+      <div class="layer-title">
+        <div class="layer-name">AI Software, Models & Applications</div>
+        <div class="layer-desc">The end products that consumers and enterprises use — where AI revenue is ultimately monetized</div>
+      </div>
+      <div class="layer-tag tag-mature">Revenue layer</div>
+    </div>
+    <div class="companies">
+      <div class="company default"><div class="company-ticker">PLTR</div><div class="company-name">Palantir</div><div class="company-note">Enterprise AI</div></div>
+      <div class="company default"><div class="company-ticker">CRM</div><div class="company-name">Salesforce</div><div class="company-note">AI CRM</div></div>
+      <div class="company default"><div class="company-ticker">NOW</div><div class="company-name">ServiceNow</div><div class="company-note">Enterprise AI workflows</div></div>
+      <div class="company default"><div class="company-ticker">OPENAI</div><div class="company-name">OpenAI</div><div class="company-note">ChatGPT — private, IPO pending</div></div>
+      <div class="company default"><div class="company-ticker">ANTH</div><div class="company-name">Anthropic</div><div class="company-note">Claude — private</div></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- SANDISK SPOTLIGHT -->
+<div class="sandisk-spotlight" style="max-width:900px;margin:0 auto 24px;margin-left:16px;margin-right:16px;">
+  <h3>★ Sandisk (SNDK) — Where It Sits & Why It Exploded</h3>
+  <div class="spotlight-grid">
+    <div class="spotlight-item">
+      <div class="s-label">Supply Chain Position</div>
+      <div class="s-val">Layer 04B</div>
+      <div class="s-sub">NAND Flash Storage — every AI data center needs massive amounts of it</div>
+    </div>
+    <div class="spotlight-item">
+      <div class="s-label">1-Year Return</div>
+      <div class="s-val">+2,850%</div>
+      <div class="s-sub">$33k invested → $1M in 12 months</div>
+    </div>
+    <div class="spotlight-item">
+      <div class="s-label">Why It Moved</div>
+      <div class="s-val">AI + Spin-off</div>
+      <div class="s-sub">Low base price + AI storage demand + S&P 500 inclusion = explosive combination</div>
+    </div>
+    <div class="spotlight-item">
+      <div class="s-label">Analogy to Your Trade</div>
+      <div class="s-val">MU = Same Layer</div>
+      <div class="s-sub">Micron is the same supply chain node — HBM + NAND — but larger and more established</div>
+    </div>
+  </div>
+</div>
+
+<!-- OPPORTUNITY PANEL -->
+<div class="opp-panel" style="max-width:900px;margin:0 auto 32px;margin-left:16px;margin-right:16px;">
+  <h3>→ Uninvested Bottlenecks to Research Next</h3>
+  <div class="opp-grid">
+
+    <div class="opp-row">
+      <div class="opp-rank" style="color:#ef4444">01</div>
+      <div class="opp-body">
+        <div class="opp-title">Power Infrastructure — The Overlooked Play</div>
+        <div class="opp-desc">AI data centers are consuming electricity faster than the grid can supply it. Nuclear, gas peakers, and power management companies don't require picking chip winners — they win regardless of which GPU generation wins.</div>
+        <div class="opp-tickers">
+          <span class="opp-ticker hot">CEG</span>
+          <span class="opp-ticker hot">VST</span>
+          <span class="opp-ticker hot">VRT</span>
+          <span class="opp-ticker">ETN</span>
+          <span class="opp-ticker">GEV</span>
+        </div>
+      </div>
+      <div class="opp-urgency urgency-now">Buy now</div>
+    </div>
+
+    <div class="opp-row">
+      <div class="opp-rank" style="color:#f59e0b">02</div>
+      <div class="opp-body">
+        <div class="opp-title">Advanced Packaging (CoWoS) — The Hidden Bottleneck</div>
+        <div class="opp-desc">Every Blackwell GPU needs CoWoS packaging before it can ship. TSMC can't make enough. Amkor Technology (AMKR) is the #2 CoWoS provider and trades at a fraction of TSMC's valuation.</div>
+        <div class="opp-tickers">
+          <span class="opp-ticker hot">AMKR</span>
+          <span class="opp-ticker">ASX</span>
+        </div>
+      </div>
+      <div class="opp-urgency urgency-now">Buy now</div>
+    </div>
+
+    <div class="opp-row">
+      <div class="opp-rank" style="color:#f59e0b">03</div>
+      <div class="opp-body">
+        <div class="opp-title">ASML — The Ultimate Chokepoint</div>
+        <div class="opp-desc">The only company on Earth that makes EUV lithography machines. No AI chip gets made without their machines. Long lead times mean they have visibility 2-3 years into the future. Trades at a premium but has earned it.</div>
+        <div class="opp-tickers">
+          <span class="opp-ticker hot">ASML</span>
+        </div>
+      </div>
+      <div class="opp-urgency urgency-soon">Research soon</div>
+    </div>
+
+    <div class="opp-row">
+      <div class="opp-rank" style="color:#a78bfa">04</div>
+      <div class="opp-body">
+        <div class="opp-title">Optical Interconnect — The Next Memory Trade</div>
+        <div class="opp-desc">As AI clusters grow, copper cables can't carry the bandwidth. Optical interconnect is the only solution. MRVL's Celestial AI buy is a bet here, but pure-play optical names like Ciena are still undiscovered.</div>
+        <div class="opp-tickers">
+          <span class="opp-ticker hot">CIEN</span>
+          <span class="opp-ticker">VIAV</span>
+          <span class="opp-ticker">MRVL</span>
+        </div>
+      </div>
+      <div class="opp-urgency urgency-watch">Watch</div>
+    </div>
+
+    <div class="opp-row">
+      <div class="opp-rank" style="color:#a78bfa">05</div>
+      <div class="opp-body">
+        <div class="opp-title">Rare Earth & Materials — The Long Game</div>
+        <div class="opp-desc">China controls ~90% of rare earth processing. The U.S. is spending billions to build domestic supply. MP Materials is the only rare earth miner in the U.S. Long-term geopolitical play, not a near-term trade.</div>
+        <div class="opp-tickers">
+          <span class="opp-ticker">MP</span>
+          <span class="opp-ticker">ENTG</span>
+          <span class="opp-ticker">FCX</span>
+        </div>
+      </div>
+      <div class="opp-urgency urgency-watch">Long term</div>
+    </div>
+
+  </div>
+</div>
+
+<div class="footer">
+  AI Supply Chain Map · Built June 15, 2026 · For research purposes only — not financial advice · Elston Allen
+</div>
+
+</body>
+</html>
